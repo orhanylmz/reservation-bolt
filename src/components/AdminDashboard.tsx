@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Home, Calendar, User, LogOut, Users, CheckCircle } from 'lucide-react';
+import { Home, Calendar, User, LogOut } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 
 type CleaningRequest = Database['public']['Tables']['cleaning_requests']['Row'];
@@ -70,7 +70,7 @@ export function AdminDashboard() {
     try {
       const { error } = await supabase
         .from('cleaning_requests')
-        .update({
+        .update<Database['public']['Tables']['cleaning_requests']['Update']>({
           assigned_employee_id: employeeId,
           status: 'assigned',
         })
@@ -88,7 +88,7 @@ export function AdminDashboard() {
     try {
       const { error } = await supabase
         .from('cleaning_requests')
-        .update({ status })
+        .update<Database['public']['Tables']['cleaning_requests']['Update']>({ status })
         .eq('id', requestId);
 
       if (error) throw error;

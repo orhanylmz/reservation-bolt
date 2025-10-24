@@ -60,7 +60,7 @@ export function EmployeeDashboard() {
     try {
       const { error } = await supabase
         .from('cleaning_requests')
-        .update({
+        .update<Database['public']['Tables']['cleaning_requests']['Update']>({
           status: 'awaiting_confirmation',
           completed_at: new Date().toISOString(),
         })

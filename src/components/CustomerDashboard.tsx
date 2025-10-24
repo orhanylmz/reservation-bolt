@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Home, Calendar, Clock, FileText, LogOut, Plus, CheckCircle, XCircle, MapPin } from 'lucide-react';
+import { Home, Calendar, FileText, LogOut, Plus, CheckCircle, XCircle, MapPin } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 import { TURKISH_CITIES } from '../data/turkishCities';
 
@@ -49,7 +49,7 @@ export function CustomerDashboard() {
     try {
       const { error } = await supabase
         .from('cleaning_requests')
-        .update({
+        .update<Database['public']['Tables']['cleaning_requests']['Update']>({
           status: 'completed',
           confirmed_at: new Date().toISOString(),
         })
@@ -66,7 +66,7 @@ export function CustomerDashboard() {
     try {
       const { error } = await supabase
         .from('cleaning_requests')
-        .update({
+        .update<Database['public']['Tables']['cleaning_requests']['Update']>({
           status: 'assigned',
           completed_at: null,
         })
@@ -86,7 +86,7 @@ export function CustomerDashboard() {
     try {
       const { error } = await supabase
         .from('cleaning_requests')
-        .insert({
+        .insert<Database['public']['Tables']['cleaning_requests']['Insert']>({
           customer_id: profile.id,
           ...formData,
         });
