@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { UserPlus } from 'lucide-react';
+import { Home, Sparkles } from 'lucide-react';
 
 export function Register({ onToggle }: { onToggle: () => void }) {
   const [email, setEmail] = useState('');
@@ -27,14 +27,18 @@ export function Register({ onToggle }: { onToggle: () => void }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border-t-4 border-green-500">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-            <UserPlus className="w-8 h-8 text-green-600" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl mb-4 shadow-lg">
+            <Home className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Kayıt Ol</h1>
-          <p className="text-gray-600">Yeni hesap oluşturun</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-2">TemizPro</h1>
+          <p className="text-gray-600 flex items-center justify-center gap-2">
+            <Sparkles className="w-4 h-4 text-teal-500" />
+            Profesyonel Ev Temizlik Hizmetleri
+            <Sparkles className="w-4 h-4 text-teal-500" />
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">

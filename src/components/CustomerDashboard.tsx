@@ -154,22 +154,22 @@ export function CustomerDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
-      <nav className="bg-white shadow-sm border-b border-green-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50">
+      <nav className="bg-white shadow-md border-b-4 border-green-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-                <Home className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Home className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Müşteri Paneli</h1>
-                <p className="text-sm text-gray-600">{profile?.full_name}</p>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">TemizPro</h1>
+                <p className="text-xs text-gray-500">Hoş geldiniz, {profile?.full_name}</p>
               </div>
             </div>
             <button
               onClick={() => signOut()}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-green-50 rounded-lg transition-colors border border-gray-200"
             >
               <LogOut className="w-4 h-4" />
               Çıkış
