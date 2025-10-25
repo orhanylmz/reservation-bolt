@@ -27,14 +27,24 @@ export function EmployeeDashboard() {
     if (!profile) return;
 
     try {
+      console.log('=== EMPLOYEE DASHBOARD DEBUG ===');
+      console.log('Profile:', profile);
+      console.log('Employee ID:', profile.id);
+      console.log('Employee Email:', profile.email);
+
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('request_assignments')
         .select('*')
         .eq('employee_id', profile.id);
 
+      console.log('Assignments Error:', assignmentsError);
+      console.log('Assignments Data:', assignmentsData);
+      console.log('Number of assignments:', assignmentsData?.length || 0);
+
       if (assignmentsError) throw assignmentsError;
 
       const requestIds = assignmentsData?.map(a => a.request_id) || [];
+      console.log('Request IDs:', requestIds);
 
       if (requestIds.length === 0) {
         setRequests([]);
