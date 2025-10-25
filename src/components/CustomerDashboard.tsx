@@ -13,6 +13,7 @@ export function CustomerDashboard() {
   const [requests, setRequests] = useState<CleaningRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<CleaningRequest | null>(null);
 
   const [formData, setFormData] = useState({
     city: '',
@@ -243,15 +244,8 @@ export function CustomerDashboard() {
           </button>
         </div>
 
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Temizlik Taleplerim</h2>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Yeni Talep
-          </button>
         </div>
 
         {showForm && (
@@ -445,7 +439,11 @@ export function CustomerDashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRequests.map((request) => (
-              <div key={request.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border border-green-100">
+              <div
+                key={request.id}
+                onClick={() => setSelectedRequest(request)}
+                className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all border border-green-100 cursor-pointer hover:scale-105"
+              >
                 <div className="flex justify-between items-start mb-4">
                   {getStatusBadge(request.status)}
                   <div className="text-xs text-gray-500">
@@ -493,30 +491,186 @@ export function CustomerDashboard() {
                     </div>
                   )}
 
-                  {request.status === 'awaiting_confirmation' && (
-                    <div className="flex gap-2 mt-4">
-                      <button
-                        onClick={() => confirmCompletion(request.id)}
-                        className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Onayla
-                      </button>
-                      <button
-                        onClick={() => rejectCompletion(request.id)}
-                        className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Reddet
-                      </button>
+                  <div className="pt-4 mt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Ücret</span>
+                      <span className="text-xl font-bold text-green-600">{request.price} ₺</span>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      <button
+        onClick={() => setShowForm(true)}
+        className="fixed bottom-8 right-8 bg-green-600 text-white p-4 rounded-full shadow-2xl hover:bg-green-700 transition-all hover:scale-110 z-50"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
+
+      {selectedRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedRequest(null)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-900">Talep Detayları</h3>
+              <button
+                onClick={() => setSelectedRequest(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="flex justify-between items-start">
+                {getStatusBadge(selectedRequest.status)}
+                <div className="text-sm text-gray-500">
+                  Oluşturulma: {new Date(selectedRequest.created_at).toLocaleDateString('tr-TR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Toplam Ücret</h4>
+                    <p className="text-xs text-gray-600">
+                      {getHomeSizeLabel(selectedRequest.home_size)} ev + {selectedRequest.employee_count} çalışan
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-green-600">{selectedRequest.price} ₺</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                  <MapPin className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Adres Bilgileri</p>
+                    <p className="text-base font-semibold text-gray-900">
+                      {selectedRequest.city} / {selectedRequest.district}
+                    </p>
+                    <p className="text-sm text-gray-700 mt-1">{selectedRequest.neighborhood}</p>
+                    <p className="text-sm text-gray-600 mt-2">{selectedRequest.address_detail}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                  <Calendar className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Hizmet Tarihi & Saati</p>
+                    <p className="text-base font-semibold text-gray-900">
+                      {new Date(selectedRequest.service_date).toLocaleDateString('tr-TR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                    <p className="text-sm text-gray-700 mt-1">Saat: {selectedRequest.service_time}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                  <Home className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Ev Detayları</p>
+                    <p className="text-base font-semibold text-gray-900">
+                      {getHomeSizeLabel(selectedRequest.home_size)} Ev
+                    </p>
+                    <p className="text-sm text-gray-700 mt-1">
+                      {selectedRequest.employee_count} Çalışan
+                    </p>
+                  </div>
+                </div>
+
+                {selectedRequest.special_notes && (
+                  <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                    <FileText className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-700 mb-1">Özel Notlar</p>
+                      <p className="text-sm text-gray-900">{selectedRequest.special_notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedRequest.completed_at && (
+                  <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <CheckCircle className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-700 mb-1">Tamamlanma Tarihi</p>
+                      <p className="text-sm text-gray-900">
+                        {new Date(selectedRequest.completed_at).toLocaleDateString('tr-TR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedRequest.confirmed_at && (
+                  <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <CheckCircle className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-700 mb-1">Onaylanma Tarihi</p>
+                      <p className="text-sm text-gray-900">
+                        {new Date(selectedRequest.confirmed_at).toLocaleDateString('tr-TR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {selectedRequest.status === 'awaiting_confirmation' && (
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      confirmCompletion(selectedRequest.id);
+                      setSelectedRequest(null);
+                    }}
+                    className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    Tamamlandığını Onayla
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      rejectCompletion(selectedRequest.id);
+                      setSelectedRequest(null);
+                    }}
+                    className="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <XCircle className="w-5 h-5" />
+                    Reddet
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
