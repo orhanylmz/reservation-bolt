@@ -25,10 +25,25 @@ export function EmployeeDashboard() {
     if (!profile) return;
 
     try {
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('request_assignments')
+        .select('request_id')
+        .eq('employee_id', profile.id);
+
+      if (assignmentsError) throw assignmentsError;
+
+      const requestIds = assignmentsData?.map(a => a.request_id) || [];
+
+      if (requestIds.length === 0) {
+        setRequests([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('cleaning_requests')
         .select('*')
-        .eq('assigned_employee_id', profile.id)
+        .in('id', requestIds)
         .order('service_date', { ascending: true });
 
       if (error) throw error;

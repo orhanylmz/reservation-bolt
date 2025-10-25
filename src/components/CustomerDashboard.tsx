@@ -20,9 +20,10 @@ export function CustomerDashboard() {
     neighborhood: '',
     address_detail: '',
     service_date: '',
-    service_time: '',
+    service_time: '09:00',
     home_size: 'medium' as 'small' | 'medium' | 'large',
     special_notes: '',
+    employee_count: 1,
   });
 
   useEffect(() => {
@@ -100,9 +101,10 @@ export function CustomerDashboard() {
         neighborhood: '',
         address_detail: '',
         service_date: '',
-        service_time: '',
+        service_time: '09:00',
         home_size: 'medium',
         special_notes: '',
+        employee_count: 1,
       });
       loadRequests();
     } catch (error) {
@@ -319,13 +321,23 @@ export function CustomerDashboard() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tercih Edilen Saat
                   </label>
-                  <input
-                    type="time"
+                  <select
                     value={formData.service_time}
                     onChange={(e) => setFormData({ ...formData, service_time: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
-                  />
+                  >
+                    <option value="09:00">09:00</option>
+                    <option value="10:00">10:00</option>
+                    <option value="11:00">11:00</option>
+                    <option value="12:00">12:00</option>
+                    <option value="13:00">13:00</option>
+                    <option value="14:00">14:00</option>
+                    <option value="15:00">15:00</option>
+                    <option value="16:00">16:00</option>
+                    <option value="17:00">17:00</option>
+                    <option value="18:00">18:00</option>
+                  </select>
                 </div>
 
                 <div>
@@ -340,6 +352,23 @@ export function CustomerDashboard() {
                     <option value="small">Küçük (1-2 oda)</option>
                     <option value="medium">Orta (3-4 oda)</option>
                     <option value="large">Büyük (5+ oda)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Çalışan Sayısı
+                  </label>
+                  <select
+                    value={formData.employee_count}
+                    onChange={(e) => setFormData({ ...formData, employee_count: parseInt(e.target.value) })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="1">1 Çalışan</option>
+                    <option value="2">2 Çalışan</option>
+                    <option value="3">3 Çalışan</option>
+                    <option value="4">4 Çalışan</option>
+                    <option value="5">5 Çalışan</option>
                   </select>
                 </div>
 

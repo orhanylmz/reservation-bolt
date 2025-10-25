@@ -6,10 +6,12 @@ import type { Database } from '../lib/database.types';
 
 type CleaningRequest = Database['public']['Tables']['cleaning_requests']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
+type RequestAssignment = Database['public']['Tables']['request_assignments']['Row'];
 
 interface RequestWithCustomer extends CleaningRequest {
   customer?: Profile;
   assigned_employee?: Profile;
+  assigned_employees?: Profile[];
 }
 
 export function AdminDashboard() {
@@ -17,7 +19,8 @@ export function AdminDashboard() {
   const [requests, setRequests] = useState<RequestWithCustomer[]>([]);
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<CleaningRequest | null>(null);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,17 +45,29 @@ export function AdminDashboard() {
 
       const requestsWithDetails = await Promise.all(
         (requestsRes.data || []).map(async (request) => {
-          const [customerRes, employeeRes] = await Promise.all([
+          const [customerRes, employeeRes, assignmentsRes] = await Promise.all([
             supabase.from('profiles').select('*').eq('id', request.customer_id).maybeSingle(),
             request.assigned_employee_id
               ? supabase.from('profiles').select('*').eq('id', request.assigned_employee_id).maybeSingle()
               : Promise.resolve({ data: null }),
+            supabase.from('request_assignments').select('employee_id').eq('request_id', request.id),
           ]);
+
+          let assignedEmployees: Profile[] = [];
+          if (assignmentsRes.data && assignmentsRes.data.length > 0) {
+            const employeeIds = assignmentsRes.data.map(a => a.employee_id);
+            const { data: empData } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('id', employeeIds);
+            assignedEmployees = empData || [];
+          }
 
           return {
             ...request,
             customer: customerRes.data || undefined,
             assigned_employee: employeeRes.data || undefined,
+            assigned_employees: assignedEmployees,
           };
         })
       );
@@ -66,22 +81,50 @@ export function AdminDashboard() {
     }
   }
 
-  async function assignEmployee(requestId: string, employeeId: string) {
+  async function assignEmployees(request: CleaningRequest, employeeIds: string[]) {
     try {
-      const { error } = await supabase
-        .from('cleaning_requests')
-        .update<Database['public']['Tables']['cleaning_requests']['Update']>({
-          assigned_employee_id: employeeId,
-          status: 'assigned',
-        })
-        .eq('id', requestId);
+      await supabase
+        .from('request_assignments')
+        .delete()
+        .eq('request_id', request.id);
 
-      if (error) throw error;
+      if (employeeIds.length > 0) {
+        const assignments = employeeIds.map(employee_id => ({
+          request_id: request.id,
+          employee_id,
+        }));
+
+        const { error: assignError } = await supabase
+          .from('request_assignments')
+          .insert(assignments);
+
+        if (assignError) throw assignError;
+
+        const { error: updateError } = await supabase
+          .from('cleaning_requests')
+          .update<Database['public']['Tables']['cleaning_requests']['Update']>({
+            assigned_employee_id: employeeIds[0],
+            status: 'assigned',
+          })
+          .eq('id', request.id);
+
+        if (updateError) throw updateError;
+      }
+
       setSelectedRequest(null);
+      setSelectedEmployees([]);
       loadData();
     } catch (error) {
-      console.error('Error assigning employee:', error);
+      console.error('Error assigning employees:', error);
     }
+  }
+
+  function toggleEmployeeSelection(employeeId: string) {
+    setSelectedEmployees(prev =>
+      prev.includes(employeeId)
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
   }
 
   async function updateStatus(requestId: string, status: string) {
@@ -246,6 +289,9 @@ export function AdminDashboard() {
                       Büyüklük
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Çalışan Sayısı
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Durum
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -286,10 +332,16 @@ export function AdminDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {getHomeSizeLabel(request.home_size)}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {request.employee_count} Kişi
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(request.status)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {request.assigned_employee ? (
-                          <span className="text-sm text-gray-900">{request.assigned_employee.full_name}</span>
+                        {request.assigned_employees && request.assigned_employees.length > 0 ? (
+                          <div className="text-sm text-gray-900">
+                            {request.assigned_employees.map(emp => emp.full_name).join(', ')}
+                            <span className="text-xs text-gray-500 ml-1">({request.assigned_employees.length}/{request.employee_count})</span>
+                          </div>
                         ) : (
                           <span className="text-sm text-gray-500">Atanmadı</span>
                         )}
@@ -298,7 +350,10 @@ export function AdminDashboard() {
                         <div className="flex gap-2">
                           {request.status === 'pending' && (
                             <button
-                              onClick={() => setSelectedRequest(request.id)}
+                              onClick={() => {
+                                setSelectedRequest(request);
+                                setSelectedEmployees(request.assigned_employees?.map(e => e.id) || []);
+                              }}
                               className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
                             >
                               Ata
@@ -326,30 +381,63 @@ export function AdminDashboard() {
       {selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Çalışan Ata</h3>
-            <div className="space-y-2 mb-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Çalışan Ata</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {selectedRequest.employee_count} çalışan seçmeniz gerekiyor. Seçili: {selectedEmployees.length}
+            </p>
+            <div className="space-y-2 mb-6 max-h-96 overflow-y-auto">
               {employees.length === 0 ? (
                 <p className="text-gray-600">Henüz çalışan yok</p>
               ) : (
-                employees.map((employee) => (
-                  <button
-                    key={employee.id}
-                    onClick={() => assignEmployee(selectedRequest, employee.id)}
-                    className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors"
-                  >
-                    <div className="font-medium text-gray-900">{employee.full_name}</div>
-                    <div className="text-sm text-gray-600">{employee.email}</div>
-                    {employee.phone && <div className="text-sm text-gray-600">{employee.phone}</div>}
-                  </button>
-                ))
+                employees.map((employee) => {
+                  const isSelected = selectedEmployees.includes(employee.id);
+                  return (
+                    <button
+                      key={employee.id}
+                      onClick={() => toggleEmployeeSelection(employee.id)}
+                      className={`w-full text-left px-4 py-3 border-2 rounded-lg transition-all ${
+                        isSelected
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900">{employee.full_name}</div>
+                          <div className="text-sm text-gray-600">{employee.email}</div>
+                          {employee.phone && <div className="text-sm text-gray-600">{employee.phone}</div>}
+                        </div>
+                        {isSelected && (
+                          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
-            <button
-              onClick={() => setSelectedRequest(null)}
-              className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              İptal
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => assignEmployees(selectedRequest, selectedEmployees)}
+                disabled={selectedEmployees.length !== selectedRequest.employee_count}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Ata ({selectedEmployees.length}/{selectedRequest.employee_count})
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedRequest(null);
+                  setSelectedEmployees([]);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                İptal
+              </button>
+            </div>
           </div>
         </div>
       )}

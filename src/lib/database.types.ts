@@ -50,6 +50,7 @@ export interface Database {
           special_notes: string | null
           status: 'pending' | 'assigned' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled'
           assigned_employee_id: string | null
+          employee_count: number
           completed_at: string | null
           confirmed_at: string | null
           created_at: string
@@ -69,6 +70,7 @@ export interface Database {
           special_notes?: string | null
           status?: 'pending' | 'assigned' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled'
           assigned_employee_id?: string | null
+          employee_count?: number
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -88,10 +90,31 @@ export interface Database {
           special_notes?: string | null
           status?: 'pending' | 'assigned' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled'
           assigned_employee_id?: string | null
+          employee_count?: number
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      request_assignments: {
+        Row: {
+          id: string
+          request_id: string
+          employee_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          request_id: string
+          employee_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          request_id?: string
+          employee_id?: string
+          created_at?: string
         }
       }
     }
