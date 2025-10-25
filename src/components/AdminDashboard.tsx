@@ -10,7 +10,6 @@ type RequestAssignment = Database['public']['Tables']['request_assignments']['Ro
 
 interface RequestWithCustomer extends CleaningRequest {
   customer?: Profile;
-  assigned_employee?: Profile;
   assigned_employees?: Profile[];
 }
 
@@ -45,11 +44,8 @@ export function AdminDashboard() {
 
       const requestsWithDetails = await Promise.all(
         (requestsRes.data || []).map(async (request) => {
-          const [customerRes, employeeRes, assignmentsRes] = await Promise.all([
+          const [customerRes, assignmentsRes] = await Promise.all([
             supabase.from('profiles').select('*').eq('id', request.customer_id).maybeSingle(),
-            request.assigned_employee_id
-              ? supabase.from('profiles').select('*').eq('id', request.assigned_employee_id).maybeSingle()
-              : Promise.resolve({ data: null }),
             supabase.from('request_assignments').select('employee_id').eq('request_id', request.id),
           ]);
 
@@ -66,7 +62,6 @@ export function AdminDashboard() {
           return {
             ...request,
             customer: customerRes.data || undefined,
-            assigned_employee: employeeRes.data || undefined,
             assigned_employees: assignedEmployees,
           };
         })
@@ -103,7 +98,6 @@ export function AdminDashboard() {
         const { error: updateError } = await supabase
           .from('cleaning_requests')
           .update<Database['public']['Tables']['cleaning_requests']['Update']>({
-            assigned_employee_id: employeeIds[0],
             status: 'assigned',
           })
           .eq('id', request.id);
