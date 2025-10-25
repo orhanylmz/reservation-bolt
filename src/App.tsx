@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LandingPage } from './components/LandingPage';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { CustomerDashboard } from './components/CustomerDashboard';
@@ -8,6 +9,7 @@ import { EmployeeDashboard } from './components/EmployeeDashboard';
 
 function AppContent() {
   const [showLogin, setShowLogin] = useState(true);
+  const [showLanding, setShowLanding] = useState(true);
   const { user, profile, loading } = useAuth();
 
   if (loading) {
@@ -22,6 +24,10 @@ function AppContent() {
   }
 
   if (!user || !profile) {
+    if (showLanding) {
+      return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+    }
+
     return showLogin ? (
       <Login onToggle={() => setShowLogin(false)} />
     ) : (
