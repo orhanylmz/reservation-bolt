@@ -6,9 +6,11 @@ import type { Database } from '../lib/database.types';
 
 type CleaningRequest = Database['public']['Tables']['cleaning_requests']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
+type RequestAssignment = Database['public']['Tables']['request_assignments']['Row'];
 
 interface RequestWithCustomer extends CleaningRequest {
   customer?: Profile;
+  myAssignment?: RequestAssignment;
 }
 
 export function EmployeeDashboard() {
@@ -27,7 +29,7 @@ export function EmployeeDashboard() {
     try {
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('request_assignments')
-        .select('request_id')
+        .select('*')
         .eq('employee_id', profile.id);
 
       if (assignmentsError) throw assignmentsError;
@@ -56,9 +58,12 @@ export function EmployeeDashboard() {
             .eq('id', request.customer_id)
             .maybeSingle();
 
+          const myAssignment = assignmentsData?.find(a => a.request_id === request.id);
+
           return {
             ...request,
             customer: customer || undefined,
+            myAssignment: myAssignment || undefined,
           };
         })
       );
@@ -71,17 +76,41 @@ export function EmployeeDashboard() {
     }
   }
 
-  async function markAsCompleted(requestId: string) {
+  async function markAsCompleted(request: RequestWithCustomer) {
+    if (!profile || !request.myAssignment) return;
+
     try {
-      const { error } = await supabase
-        .from('cleaning_requests')
-        .update<Database['public']['Tables']['cleaning_requests']['Update']>({
-          status: 'awaiting_confirmation',
+      const { error: assignmentError } = await supabase
+        .from('request_assignments')
+        .update<Database['public']['Tables']['request_assignments']['Update']>({
+          completed_by_employee: true,
           completed_at: new Date().toISOString(),
         })
-        .eq('id', requestId);
+        .eq('id', request.myAssignment.id);
 
-      if (error) throw error;
+      if (assignmentError) throw assignmentError;
+
+      const { data: allAssignments, error: checkError } = await supabase
+        .from('request_assignments')
+        .select('*')
+        .eq('request_id', request.id);
+
+      if (checkError) throw checkError;
+
+      const allCompleted = allAssignments?.every(a => a.completed_by_employee) || false;
+
+      if (allCompleted) {
+        const { error: updateError } = await supabase
+          .from('cleaning_requests')
+          .update<Database['public']['Tables']['cleaning_requests']['Update']>({
+            status: 'awaiting_confirmation',
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', request.id);
+
+        if (updateError) throw updateError;
+      }
+
       loadRequests();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -285,20 +314,23 @@ export function EmployeeDashboard() {
                     </div>
                   )}
 
-                  {(request.status === 'assigned' || request.status === 'in_progress') && (
+                  {request.myAssignment?.completed_by_employee ? (
+                    <div className="w-full bg-green-50 border-2 border-green-200 text-green-800 py-3 rounded-lg font-medium text-center">
+                      ✓ Tamamlandı olarak işaretlediniz
+                    </div>
+                  ) : (request.status === 'assigned' || request.status === 'in_progress') ? (
                     <button
-                      onClick={() => markAsCompleted(request.id)}
+                      onClick={() => markAsCompleted(request)}
                       className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <Home className="w-5 h-5" />
                       Temizliği Tamamladım
                     </button>
-                  )}
-                  {request.status === 'awaiting_confirmation' && (
+                  ) : request.status === 'awaiting_confirmation' ? (
                     <div className="w-full bg-orange-50 border-2 border-orange-200 text-orange-800 py-3 rounded-lg font-medium text-center">
                       Müşteri onayı bekleniyor...
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             ))}

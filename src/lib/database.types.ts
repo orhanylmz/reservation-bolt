@@ -51,6 +51,7 @@ export interface Database {
           status: 'pending' | 'assigned' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled'
           assigned_employee_id: string | null
           employee_count: number
+          price: number
           completed_at: string | null
           confirmed_at: string | null
           created_at: string
@@ -71,6 +72,7 @@ export interface Database {
           status?: 'pending' | 'assigned' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled'
           assigned_employee_id?: string | null
           employee_count?: number
+          price?: number
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -91,6 +93,7 @@ export interface Database {
           status?: 'pending' | 'assigned' | 'in_progress' | 'awaiting_confirmation' | 'completed' | 'cancelled'
           assigned_employee_id?: string | null
           employee_count?: number
+          price?: number
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -103,18 +106,24 @@ export interface Database {
           request_id: string
           employee_id: string
           created_at: string
+          completed_by_employee: boolean
+          completed_at: string | null
         }
         Insert: {
           id?: string
           request_id: string
           employee_id: string
           created_at?: string
+          completed_by_employee?: boolean
+          completed_at?: string | null
         }
         Update: {
           id?: string
           request_id?: string
           employee_id?: string
           created_at?: string
+          completed_by_employee?: boolean
+          completed_at?: string | null
         }
       }
     }

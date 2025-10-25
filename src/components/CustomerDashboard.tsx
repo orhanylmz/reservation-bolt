@@ -26,6 +26,18 @@ export function CustomerDashboard() {
     employee_count: 1,
   });
 
+  const calculatePrice = (homeSize: 'small' | 'medium' | 'large', employeeCount: number): number => {
+    const basePrices = {
+      small: 500,
+      medium: 800,
+      large: 1200,
+    };
+    const basePrice = basePrices[homeSize];
+    return basePrice * (1 + (employeeCount - 1) * 0.5);
+  };
+
+  const currentPrice = calculatePrice(formData.home_size, formData.employee_count);
+
   useEffect(() => {
     loadRequests();
   }, []);
@@ -85,11 +97,13 @@ export function CustomerDashboard() {
     if (!profile) return;
 
     try {
+      const price = calculatePrice(formData.home_size, formData.employee_count);
       const { error } = await supabase
         .from('cleaning_requests')
         .insert<Database['public']['Tables']['cleaning_requests']['Insert']>({
           customer_id: profile.id,
           ...formData,
+          price,
         });
 
       if (error) throw error;
@@ -382,6 +396,20 @@ export function CustomerDashboard() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     rows={3}
                   />
+                </div>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Toplam Ücret</h4>
+                    <p className="text-xs text-gray-600">
+                      {getHomeSizeLabel(formData.home_size)} ev + {formData.employee_count} çalışan
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-green-600">{currentPrice} ₺</p>
+                  </div>
                 </div>
               </div>
 
